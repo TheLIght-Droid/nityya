@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Romantic Editorial</title>
+    
+    <!-- Google Fonts: Italiana for luxury editorial headlines, Cormorant Garamond for body -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Italiana&display=swap" rel="stylesheet">
+    
+    <!-- Canvas Confetti for the success state -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #FDFBF7;
+            --primary: #4A1525; /* Deep wine/burgundy */
+            --accent-blush: #E8D7D0;
+            --accent-ink: #1A1A1A;
+            --accent-gold: #C5A059;
+            --serif-display: 'Italiana', serif;
+            --serif-body: 'Cormorant Garamond', serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--primary);
+            font-family: var(--serif-body);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Ambient Physics Canvas */
+        #ambient-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Bespoke Botanical Loader */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1s cubic-bezier(0.76, 0, 0.24, 1);
+        }
+
+        .loader-svg {
+            width: 80px;
+            height: 80px;
+            stroke: var(--primary);
+            stroke-width: 1;
+            fill: none;
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            animation: drawLine 2.5s ease-in-out forwards;
+        }
+
+        @keyframes drawLine {
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* Layout Structure: Asymmetric Split Screen */
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Left Side: Editorial Art / Full Bleed Graphic */
+        .art-panel {
+            flex: 1.2;
+            background-color: var(--accent-blush);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-right: 1px solid rgba(74, 21, 37, 0.1);
+        }
+
+        .art-panel::before {
+            content: '';
+            position: absolute;
+            inset: 40px;
+            border: 1px solid var(--primary);
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .botanical-illustration {
+            width: 60%;
+            height: auto;
+            max-width: 400px;
+            stroke: var(--primary);
+            stroke-width: 0.75;
+            fill: none;
+            opacity: 0.85;
+        }
+
+        /* Right Side: Interactive Editorial Narrative */
+        .content-panel {
+            flex: 1;
+            display: grid;
+            grid-template-rows: 1fr auto 1fr;
+            padding: 80px;
+            position: relative;
+            background: var(--bg-color);
+        }
+
+        /* Editorial Typography & Hierarchy */
+        header {
+            align-self: start;
+        }
+
+        .brand-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .screen {
+            grid-row: 2;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+            transition: opacity 0.6s cubic-bezier(0.215, 0.610, 0.355, 1), transform 0.6s cubic-bezier(0.215, 0.610, 0.355, 1);
+            position: absolute;
+            width: calc(100% - 160px);
+        }
+
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+            position: relative;
+            width: 100%;
+        }
+
+        h1 {
+            font-family: var(--serif-display);
+            font-size: 4.5rem;
+            font-weight: 400;
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            color: var(--primary);
+            margin-bottom: 24px;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            font-style: italic;
+            color: var(--accent-ink);
+            margin-bottom: 40px;
+            max-width: 85%;
+        }
+
+        /* Luxury Minimalist Buttons */
+        .btn-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .btn {
+            font-family: var(--serif-body);
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 14px 36px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: color 0.4s ease;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary);
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.76, 0, 0.24, 1);
+            z-index: -1;
+        }
+
+        .btn:hover {
+            color: var(--bg-color);
+        }
+
+        .btn:hover::before {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            border-color: transparent;
+            text-decoration: underline;
+            text-underline-offset: 5px;
+        }
+
+        .btn-secondary::before {
+            display: none;
+        }
+
+        .btn-secondary:hover {
+            color: var(--accent-gold);
+        }
+
+        /* Final Screen Specifics */
+        .typewriter-text {
+            font-size: 1.6rem;
+            line-height: 1.8;
+            min-height: 120px;
+        }
+
+        .footer-note {
+            grid-row: 3;
+            align-self: end;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            opacity: 0.4;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 968px) {
+            .container {
+                flex-direction: column;
+            }
+            .art-panel {
+                flex: 0.6;
+                border-right: none;
+                border-bottom: 1px solid rgba(74, 21, 37, 0.1);
+            }
+            .art-panel::before {
+                inset: 20px;
+            }
+            .botanical-illustration {
+                width: 40%;
+            }
+            .content-panel {
+                flex: 1.4;
+                padding: 40px;
+            }
+            .screen {
+                width: calc(100% - 80px);
+            }
+            h1 {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Bespoke Organic Loader -->
+    <div id="loader">
+        <svg class="loader-svg" viewBox="0 0 24 24">
+            <path d="M12,22 C12,22 4,16 4,10 C4,6 7,3 11,3 C12,3 12.5,4 12.5,4 C12.5,4 13,3 14,3 C18,3 20,6 20,10 C20,16 12,22 12,22 Z"></path>
+            <path d="M12,22 C12,16 10,14 10,10" stroke-dasharray="5 5"></path>
+        </svg>
+    </div>
+
+    <!-- Physics Simulation Layer -->
+    <canvas id="ambient-canvas"></canvas>
+
+    <!-- Main Container -->
+    <div class="container">
+        
+        <!-- Left Side: Asymmetric Fine-Art Panel -->
+        <div class="art-panel">
+            <svg class="botanical-illustration" viewBox="0 0 100 100">
+                <!-- Minimalist Line Art Rose / Botanical -->
+                <path d="M50,85 C50,65 48,45 52,25" />
+                <path d="M52,25 C35,20 30,35 50,45 C65,40 68,15 52,25 Z" fill="none" />
+                <path d="M50,32 C42,28 45,18 53,16 C60,20 58,28 50,32 Z" fill="none" />
+                <path d="M52,48 C38,52 42,62 48,55" />
+                <path d="M51,65 C62,62 60,72 53,75" />
+            </svg>
+        </div>
+
+        <!-- Right Side: Content Delivery -->
+        <div class="content-panel">
+            <header>
+                <span class="brand-label">Collection N° 14</span>
+            </header>
+
+            <!-- SCREEN 1: The Opening -->
+            <div class="screen active" id="screen-opening">
+                <h1>Hey Bae.</h1>
+                <p class="subtitle">How was your Accounts paper?</p>
+                <div class="btn-group">
+                    <button class="btn" onclick="navigateTo('good')">Good</button>
+                    <button class="btn btn-secondary" onclick="navigateTo('bad')">Bad</button>
+                </div>
+            </div>
+
+            <!-- SCREEN 2: The Good Sequence -->
+            <div class="screen" id="screen-good">
+                <h1>YAYAYAY!!!</h1>
+                <p class="subtitle">I knew you'd do well. I trusted you from the start. Proud of you, bae.</p>
+                <div class="btn-group">
+                    <button class="btn" onclick="navigateTo('final')">Next</button>
+                </div>
+            </div>
+
+            <!-- SCREEN 3: The Bad Sequence -->
+            <div class="screen" id="screen-bad">
+                <h1>Oh nooo.</h1>
+                <p class="subtitle">Can I do something about it?</p>
+                <div class="btn-group">
+                    <button class="btn" onclick="navigateTo('final')">Yes</button>
+                    <button class="btn btn-secondary" onclick="navigateTo('final')">No</button>
+                </div>
+            </div>
+
+            <!-- SCREEN 4: The Final Typographic Screen -->
+            <div class="screen" id="screen-final">
+                <div class="typewriter-text" id="typewriter"></div>
+            </div>
+
+            <footer class="footer-note">
+                <span>© 2026 ALL RIGHTS RESERVED.</span>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // Custom Page Transition / Loader Simulation
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('loader');
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 1000);
+            }, 1800);
+        });
+
+        // App Navigation Logic
+        function navigateTo(state) {
+            // Deactivate all active screens
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            
+            if (state === 'good') {
+                document.getElementById('screen-good').classList.add('active');
+                triggerLuxuryConfetti();
+            } else if (state === 'bad') {
+                document.getElementById('screen-bad').classList.add('active');
+            } else if (state === 'final') {
+                document.getElementById('screen-final').classList.add('active');
+                startTypewriter();
+            }
+        }
+
+        // Celebratory Trigger tailored to palette
+        function triggerLuxuryConfetti() {
+            const duration = 2.5 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 25, spread: 360, ticks: 60, zIndex: 0 };
+
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                const particleCount = 20 * (timeLeft / duration);
+                // Confetti tinted to match editorial color scheme (Burgundy, Gold, Blush)
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }, colors: ['#4A1525', '#C5A059', '#E8D7D0'] }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }, colors: ['#4A1525', '#C5A059', '#E8D7D0'] }));
+            }, 250);
+        }
+
+        // Editorial Typewriter implementation
+        const finalLines = [
+            "Bhaad me jaye.",
+            "Jo hona tha ho gaya.",
+            "Ab bas relax karo, everything will be okay."
+        ];
+
+        function startTypewriter() {
+            const container = document.getElementById('typewriter');
+            container.innerHTML = '';
+            let lineIndex = 0;
+            let charIndex = 0;
+
+            function type() {
+                if (lineIndex < finalLines.length) {
+                    if (charIndex === 0) {
+                        const p = document.createElement('p');
+                        p.style.marginBottom = '12px';
+                        if(lineIndex === 2) p.style.color = 'var(--accent-gold)';
+                        container.appendChild(p);
+                    }
+                    
+                    const currentParagraph = container.lastChild;
+                    currentParagraph.innerHTML += finalLines[lineIndex].charAt(charIndex);
+                    charIndex++;
+
+                    if (charIndex < finalLines[lineIndex].length) {
+                        setTimeout(type, 40);
+                    } else {
+                        lineIndex++;
+                        charIndex = 0;
+                        setTimeout(type, 600); // Elegant pause between thoughts
+                    }
+                }
+            }
+            setTimeout(type, 400);
+        }
+
+        // Physics Layer: Soft organic falling petals with drag, gravity, and wind sway
+        const canvas = document.getElementById('ambient-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        class Petal {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * -height - 20;
+                this.size = Math.random() * 6 + 4;
+                this.gravity = Math.random() * 0.4 + 0.4;
+                this.wind = Math.random() * 0.5 - 0.25;
+                this.swaySpeed = Math.random() * 0.02 + 0.01;
+                this.swayAngle = Math.random() * Math.PI;
+                this.opacity = Math.random() * 0.4 + 0.2;
+                // Palette distribution for organic materials
+                this.color = Math.random() > 0.5 ? '#4A1525' : '#E8D7D0';
+            }
+
+            update() {
+                this.y += this.gravity;
+                this.swayAngle += this.swaySpeed;
+                this.x += this.wind + Math.sin(this.swayAngle) * 0.4;
+
+                if (this.y > height + 20) {
+                    this.y = -20;
+                    this.x = Math.random() * width;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.swayAngle * 0.2);
+                ctx.beginPath();
+                // Draw sophisticated organic particle silhouettes (asymmetrical organic ellipses)
+                ctx.ellipse(0, 0, this.size, this.size * 0.6, 0, 0, 2 * Math.PI);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.opacity;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        const petalArray = Array.from({ length: 28 }, () => new Petal());
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            petalArray.forEach(petal => {
+                petal.update();
+                petal.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>
