@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>N&deg;14 — For You</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,900;1,9..144,400;1,9..144,500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --wine-deep:   #2E0C1A;
+  --wine:        #4A1428;
+  --wine-light:  #6B2038;
+  --blush:       #F3DED2;
+  --paper:       #FBF5EE;
+  --gold:        #C7963E;
+  --gold-dim:    #a9813f;
+  --ink:         #1B1310;
+
+  --display: 'Fraunces', serif;
+  --body: 'Cormorant Garamond', serif;
+  --utility: 'Space Grotesk', sans-serif;
+
+  --ease: cubic-bezier(.22,.61,.36,1);
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  overflow-x:hidden;
+  cursor:none;
+  min-height:100vh;
+}
+
+@media (hover:none){
+  body{ cursor:auto; }
+}
+
+::selection{ background:var(--gold); color:var(--paper); }
+
+/* ============================================================
+   CUSTOM CURSOR — small ink dot with drag lag
+   ============================================================ */
+#cursor{
+  position:fixed; top:0; left:0; width:16px; height:16px;
+  border-radius:50%;
+  background:var(--wine);
+  pointer-events:none;
+  z-index:9999;
+  transform:translate(-50%,-50%);
+  mix-blend-mode:multiply;
+  transition:width .25s var(--ease), height .25s var(--ease), background .25s var(--ease);
+}
+#cursor.hover{ width:44px; height:44px; background:var(--gold); }
+@media (hover:none){ #cursor{ display:none; } }
+
+/* ============================================================
+   INK TRANSITION OVERLAY
+   ============================================================ */
+#ink-overlay{
+  position:fixed; inset:0;
+  background:var(--wine-deep);
+  clip-path:circle(0% at 50% 50%);
+  z-index:8000;
+  pointer-events:none;
+  filter:url(#ink-distort);
+}
+#ink-overlay.active{ transition:clip-path 1.05s var(--ease); }
+
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+.stage{
+  position:relative;
+  width:100%;
+  min-height:100vh;
+  display:none;
+}
+.stage.is-visible{ display:block; }
+
+.split{
+  display:grid;
+  grid-template-columns:44% 56%;
+  min-height:100vh;
+}
+
+.panel-art{
+  position:relative;
+  background:
+    radial-gradient(120% 90% at 20% 15%, var(--wine-light) 0%, var(--wine) 45%, var(--wine-deep) 100%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+.panel-content{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:8vw 7vw 8vw 5vw;
+  background:var(--paper);
+}
+
+/* vertical edition mark, left rail */
+.edition-mark{
+  position:absolute;
+  left:22px; top:50%;
+  transform:translateY(-50%) rotate(180deg);
+  writing-mode:vertical-rl;
+  font-family:var(--utility);
+  font-size:11px;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:rgba(251,245,238,.55);
+  z-index:2;
+}
+.panel-content .edition-mark{ color:rgba(27,19,16,.35); left:-6px; }
+
+.eyebrow{
+  font-family:var(--utility);
+  font-size:12px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--gold-dim);
+  margin-bottom:22px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.eyebrow::before{
+  content:'';
+  display:inline-block;
+  width:34px; height:1px;
+  background:var(--gold-dim);
+}
+
+h1.headline{
+  font-family:var(--display);
+  font-weight:900;
+  font-optical-sizing:auto;
+  font-size:clamp(3rem, 8vw, 6.4rem);
+  line-height:.94;
+  letter-spacing:-.02em;
+  color:var(--wine-deep);
+  max-width:11ch;
+}
+h1.headline em{
+  font-style:italic;
+  font-weight:500;
+  color:var(--gold);
+}
+
+.sub{
+  font-family:var(--body);
+  font-style:italic;
+  font-size:clamp(1.3rem,2.4vw,1.9rem);
+  color:var(--wine);
+  margin-top:26px;
+  max-width:34ch;
+  line-height:1.35;
+}
+
+.lines{ margin-top:36px; }
+.lines p{
+  font-family:var(--body);
+  font-size:1.35rem;
+  line-height:1.5;
+  color:var(--ink);
+  max-width:32ch;
+  opacity:0;
+  transform:translateY(14px);
+}
+.lines p.in{ animation:rise .8s var(--ease) forwards; }
+
+@keyframes rise{ to{ opacity:1; transform:translateY(0); } }
+
+/* buttons */
+.choices{
+  display:flex;
+  gap:18px;
+  margin-top:46px;
+  flex-wrap:wrap;
+}
+.btn{
+  font-family:var(--utility);
+  font-size:14px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  background:none;
+  border:1px solid var(--wine-deep);
+  color:var(--wine-deep);
+  padding:16px 34px;
+  cursor:none;
+  position:relative;
+  overflow:hidden;
+  transition:color .4s var(--ease), border-color .4s var(--ease);
+}
+.btn::before{
+  content:'';
+  position:absolute; inset:0;
+  background:var(--wine-deep);
+  transform:translateY(101%);
+  transition:transform .45s var(--ease);
+  z-index:0;
+}
+.btn span{ position:relative; z-index:1; transition:color .4s var(--ease); }
+.btn:hover{ color:var(--paper); }
+.btn:hover::before{ transform:translateY(0); }
+.btn.gold{ border-color:var(--gold); color:var(--gold-dim); }
+.btn.gold::before{ background:var(--gold); }
+.btn.gold:hover{ color:var(--wine-deep); }
+
+/* ============================================================
+   BLOOM SVG (signature element)
+   ============================================================ */
+.bloom-wrap{ width:min(70%, 420px); position:relative; z-index:2; }
+.bloom-wrap svg{ width:100%; height:auto; overflow:visible; }
+
+.petal{
+  transform-box:fill-box;
+  transform-origin:50% 100%;
+  fill:var(--blush);
+  stroke:var(--paper);
+  stroke-width:.6;
+  stroke-dasharray:220;
+  stroke-dashoffset:220;
+  opacity:0;
+  animation:petalGrow 1.1s var(--ease) forwards;
+}
+.petal.mid{ fill:#e9c3c9; }
+.petal.inner{ fill:var(--wine-light); }
+@keyframes petalGrow{
+  0%{ opacity:0; stroke-dashoffset:220; }
+  15%{ opacity:1; }
+  100%{ opacity:1; stroke-dashoffset:0; }
+}
+.stem{
+  stroke:var(--blush);
+  stroke-width:2;
+  fill:none;
+  stroke-dasharray:400;
+  stroke-dashoffset:400;
+  animation:stemGrow 1.6s var(--ease) forwards .15s;
+}
+@keyframes stemGrow{ to{ stroke-dashoffset:0; } }
+.leaf{ fill:none; stroke:var(--blush); stroke-width:1.6; opacity:.85; }
+
+.bloom-wrap.clickable{ cursor:none; }
+.bloom-wrap.bloomed .petal{ animation-play-state:paused; stroke-dashoffset:0; opacity:1; }
+
+/* corner botanical line-art */
+.botanical{
+  position:absolute;
+  opacity:.5;
+  pointer-events:none;
+}
+.botanical path{ fill:none; stroke:rgba(251,245,238,.4); stroke-width:1.2; }
+.panel-content .botanical path{ stroke:rgba(74,20,40,.18); }
+
+/* ============================================================
+   PETAL PHYSICS CANVAS (celebratory moment)
+   ============================================================ */
+#petal-canvas{
+  position:fixed; inset:0;
+  z-index:50;
+  pointer-events:none;
+}
+
+/* ============================================================
+   FINAL SCREEN — typewriter
+   ============================================================ */
+.stage-final{
+  display:none;
+  min-height:100vh;
+  align-items:center;
+  justify-content:center;
+  background:var(--wine-deep);
+  color:var(--blush);
+  text-align:left;
+  padding:6vw;
+}
+.stage-final.is-visible{ display:flex; }
+.type-block{ max-width:640px; }
+.type-block .eyebrow{ color:var(--gold); }
+.type-line{
+  font-family:var(--display);
+  font-weight:500;
+  font-style:italic;
+  font-size:clamp(1.7rem, 4vw, 2.6rem);
+  line-height:1.5;
+  min-height:1.5em;
+  border-right:2px solid var(--gold);
+  white-space:pre-wrap;
+  padding-right:4px;
+}
+.type-line.done{ border-right:2px solid transparent; }
+.type-line + .type-line{ margin-top:6px; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 880px){
+  .split{ grid-template-columns:1fr; }
+  .panel-art{ min-height:46vh; padding:40px 0; }
+  .panel-content{ padding:12vw 8vw 16vw 8vw; }
+  h1.headline{ max-width:100%; }
+  .edition-mark{ display:none; }
+  .stage-final{ padding:12vw 8vw; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- invisible SVG filter used by the ink transition overlay -->
+<svg width="0" height="0" style="position:absolute">
+  <filter id="ink-distort">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="2" seed="7" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="60"/>
+  </filter>
+</svg>
+
+<div id="cursor"></div>
+<div id="ink-overlay"></div>
+<canvas id="petal-canvas"></canvas>
+
+<!-- ============================================================
+     SCENE 1 — OPENING
+     ============================================================ -->
+<section class="stage is-visible" id="scene-open" data-scene="open">
+  <div class="split">
+    <div class="panel-art">
+      <span class="edition-mark">N&deg;14 — For You — Est. Us</span>
+      <svg class="botanical" style="top:6%; right:6%; width:110px;" viewBox="0 0 100 160" aria-hidden="true">
+        <path d="M50 10 C 30 40, 70 60, 50 90 C 30 120, 70 130, 50 150"/>
+        <path d="M50 30 C 40 32, 30 40, 28 50"/>
+        <path d="M50 70 C 62 72, 72 78, 76 88"/>
+      </svg>
+      <div class="bloom-wrap" id="rose-open">
+        <!-- ROSE ILLUSTRATION: hand-built, layered petals + stem, see #rose-template -->
+        <svg viewBox="-140 -260 280 420">
+          <path class="stem" d="M0,150 C -10,90 12,40 0,0 C -8,-10 6,-20 0,-30"/>
+          <path class="leaf" d="M0,90 C -35,80 -50,55 -48,35 C -20,40 -2,60 0,90 Z"/>
+          <path class="leaf" d="M0,110 C 32,100 46,78 45,58 C 18,64 2,84 0,110 Z"/>
+          <g id="petals-outer"></g>
+          <g id="petals-mid"></g>
+          <g id="petals-inner"></g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="panel-content">
+      <span class="edition-mark">02 &middot; Question</span>
+      <div class="eyebrow">For you, specifically</div>
+      <h1 class="headline">Hey <em>Bae</em></h1>
+      <p class="sub">Before anything else &mdash; I need to know one thing.</p>
+      <div class="lines">
+        <p class="in" style="animation-delay:.3s">How was your Accounts paper?</p>
+      </div>
+      <div class="choices">
+        <button class="btn" data-goto="good"><span>Good &#128526;</span></button>
+        <button class="btn gold" data-goto="bad"><span>Bad &#128557;</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SCENE 2 — GOOD
+     ============================================================ -->
+<section class="stage" id="scene-good" data-scene="good">
+  <div class="split">
+    <div class="panel-art">
+      <span class="edition-mark">N&deg;14 — Celebration</span>
+      <div class="bloom-wrap" id="rose-good">
+        <svg viewBox="-140 -260 280 420">
+          <path class="stem" d="M0,150 C -10,90 12,40 0,0 C -8,-10 6,-20 0,-30"/>
+          <path class="leaf" d="M0,90 C -35,80 -50,55 -48,35 C -20,40 -2,60 0,90 Z"/>
+          <path class="leaf" d="M0,110 C 32,100 46,78 45,58 C 18,64 2,84 0,110 Z"/>
+          <g id="petals-outer-good"></g>
+          <g id="petals-mid-good"></g>
+          <g id="petals-inner-good"></g>
+        </svg>
+      </div>
+    </div>
+    <div class="panel-content">
+      <span class="edition-mark">03 &middot; Result</span>
+      <div class="eyebrow">Confirmed, on the record</div>
+      <h1 class="headline">YAYAYAY<em>!!!</em></h1>
+      <div class="lines">
+        <p class="in" style="animation-delay:.15s">I knew you'd do well.</p>
+        <p class="in" style="animation-delay:.55s">I trusted you from the start.</p>
+        <p class="in" style="animation-delay:.95s">Proud of you, bae. &#10084;&#65039;</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SCENE 3 — BAD
+     ============================================================ -->
+<section class="stage" id="scene-bad" data-scene="bad">
+  <div class="split">
+    <div class="panel-art">
+      <span class="edition-mark">N&deg;14 — Still Here</span>
+      <div class="bloom-wrap" id="rose-bad">
+        <svg viewBox="-140 -260 280 420">
+          <path class="stem" d="M0,150 C -10,90 12,40 0,0 C -8,-10 6,-20 0,-30"/>
+          <path class="leaf" d="M0,90 C -35,80 -50,55 -48,35 C -20,40 -2,60 0,90 Z"/>
+          <path class="leaf" d="M0,110 C 32,100 46,78 45,58 C 18,64 2,84 0,110 Z"/>
+          <g id="petals-outer-bad"></g>
+          <g id="petals-mid-bad"></g>
+          <g id="petals-inner-bad"></g>
+        </svg>
+      </div>
+    </div>
+    <div class="panel-content">
+      <span class="edition-mark">03 &middot; Result</span>
+      <div class="eyebrow">Noted, gently</div>
+      <h1 class="headline">Oh <em>nooo</em> &#128557;</h1>
+      <div class="lines">
+        <p class="in" style="animation-delay:.2s">Can I do something about it?</p>
+      </div>
+      <div class="choices">
+        <button class="btn" data-goto="final"><span>Yes</span></button>
+        <button class="btn gold" data-goto="final"><span>No</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SCENE 4 — FINAL (typewriter)
+     ============================================================ -->
+<section class="stage-final" id="scene-final" data-scene="final">
+  <div class="type-block">
+    <div class="eyebrow">04 &middot; Last word</div>
+    <p class="type-line" id="type-1"></p>
+    <p class="type-line" id="type-2"></p>
+    <p class="type-line" id="type-3"></p>
+  </div>
+</section>
+
+<script>
+/* ============================================================
+   PETAL SYMBOL BUILDER — draws layered petals around a rose core
+   ============================================================ */
+function petalPath(len, wide){
+  return `M0,0 C ${-wide},${-len*0.32} ${-wide*0.6},${-len*0.82} 0,${-len} C ${wide*0.6},${-len*0.82} ${wide},${-len*0.32} 0,0 Z`;
+}
+function buildRose(prefixOuter, prefixMid, prefixInner){
+  const outer = document.getElementById(prefixOuter);
+  const mid   = document.getElementById(prefixMid);
+  const inner = document.getElementById(prefixInner);
+  if(!outer) return;
+  const layers = [
+    { group: outer, count: 6, len: 108, wide: 46, cls: '', delayBase: .35, y: -6 },
+    { group: mid,   count: 5, len: 78,  wide: 34, cls: 'mid', delayBase: .55, y: -8 },
+    { group: inner, count: 4, len: 46,  wide: 22, cls: 'inner', delayBase: .8, y: -10 }
+  ];
+  layers.forEach(layer=>{
+    for(let i=0;i<layer.count;i++){
+      const angle = (360/layer.count)*i + (layer.cls==='inner'?20:0);
+      const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('class', 'petal ' + layer.cls);
+      p.setAttribute('d', petalPath(layer.len, layer.wide));
+      p.setAttribute('transform', `translate(0,${layer.y}) rotate(${angle})`);
+      p.style.animationDelay = (layer.delayBase + i*0.09) + 's';
+      layer.group.appendChild(p);
+    }
+  });
+}
+buildRose('petals-outer','petals-mid','petals-inner');
+buildRose('petals-outer-good','petals-mid-good','petals-inner-good');
+buildRose('petals-outer-bad','petals-mid-bad','petals-inner-bad');
+
+/* ============================================================
+   CUSTOM CURSOR — lerped follow + hover scale
+   ============================================================ */
+const cursor = document.getElementById('cursor');
+let mx=innerWidth/2, my=innerHeight/2, cx=mx, cy=my;
+window.addEventListener('mousemove', e=>{ mx=e.clientX; my=e.clientY; });
+(function loop(){
+  cx += (mx-cx)*0.18; cy += (my-cy)*0.18;
+  cursor.style.transform = `translate(${cx}px, ${cy}px) translate(-50%,-50%)`;
+  requestAnimationFrame(loop);
+})();
+document.addEventListener('mouseover', e=>{
+  if(e.target.closest('.btn') || e.target.closest('.bloom-wrap')) cursor.classList.add('hover');
+});
+document.addEventListener('mouseout', e=>{
+  if(e.target.closest('.btn') || e.target.closest('.bloom-wrap')) cursor.classList.remove('hover');
+});
+
+/* ============================================================
+   INK TRANSITION between scenes
+   ============================================================ */
+const overlay = document.getElementById('ink-overlay');
+function goTo(sceneName, originX, originY){
+  const current = document.querySelector('.stage.is-visible, .stage-final.is-visible');
+  const target = document.querySelector(`[data-scene="${sceneName}"]`);
+  overlay.style.clipPath = `circle(0% at ${originX}px ${originY}px)`;
+  overlay.classList.add('active');
+  requestAnimationFrame(()=>{
+    overlay.style.clipPath = `circle(150% at ${originX}px ${originY}px)`;
+  });
+  setTimeout(()=>{
+    if(current) current.classList.remove('is-visible');
+    target.classList.add('is-visible');
+    if(sceneName === 'good') burstPetals();
+    if(sceneName === 'final') startTypewriter();
+  }, 550);
+  setTimeout(()=>{
+    overlay.style.clipPath = `circle(0% at ${originX}px ${originY}px)`;
+    overlay.classList.remove('active');
+  }, 1150);
+}
+
+document.querySelectorAll('[data-goto]').forEach(btn=>{
+  btn.addEventListener('click', e=>{
+    const rect = btn.getBoundingClientRect();
+    goTo(btn.dataset.goto, rect.left+rect.width/2, rect.top+rect.height/2);
+  });
+});
+
+/* click the opening rose for a small delighted reaction (no scene change) */
+document.getElementById('rose-open').addEventListener('click', function(){
+  this.classList.toggle('bloomed');
+  this.style.transform = 'scale(1.04)';
+  setTimeout(()=>{ this.style.transform = 'scale(1)'; }, 260);
+});
+
+/* ============================================================
+   PETAL PHYSICS — real gravity + sway, canvas-based
+   ============================================================ */
+const canvas = document.getElementById('petal-canvas');
+const ctx = canvas.getContext('2d');
+function resizeCanvas(){ canvas.width = innerWidth; canvas.height = innerHeight; }
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+const palette = ['#4A1428', '#C7963E', '#e9c3c9', '#F3DED2'];
+let petals = [];
+
+function spawnPetal(){
+  petals.push({
+    x: Math.random()*canvas.width,
+    y: -20 - Math.random()*200,
+    vx: (Math.random()-0.5)*20,
+    vy: 20 + Math.random()*30,
+    size: 8 + Math.random()*10,
+    rot: Math.random()*Math.PI*2,
+    rotSpeed: (Math.random()-0.5)*2.4,
+    swayPhase: Math.random()*Math.PI*2,
+    swayFreq: 0.6 + Math.random()*0.8,
+    swayAmp: 30 + Math.random()*40,
+    color: palette[Math.floor(Math.random()*palette.length)],
+    life: 0
+  });
+}
+
+function drawPetal(p){
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(p.rot);
+  ctx.fillStyle = p.color;
+  ctx.beginPath();
+  ctx.moveTo(0, -p.size);
+  ctx.bezierCurveTo(p.size*0.7, -p.size*0.3, p.size*0.5, p.size*0.6, 0, p.size);
+  ctx.bezierCurveTo(-p.size*0.5, p.size*0.6, -p.size*0.7, -p.size*0.3, 0, -p.size);
+  ctx.fill();
+  ctx.restore();
+}
+
+let lastT = performance.now();
+let petalsActive = false;
+function petalLoop(t){
+  const dt = Math.min((t-lastT)/1000, 0.05);
+  lastT = t;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(petalsActive){
+    petals.forEach(p=>{
+      p.life += dt;
+      p.vy += 14*dt; /* gravity */
+      p.x += (p.vx + Math.sin(p.life*p.swayFreq + p.swayPhase)*p.swayAmp) * dt;
+      p.y += p.vy*dt;
+      p.rot += p.rotSpeed*dt;
+      drawPetal(p);
+    });
+    petals = petals.filter(p=> p.y < canvas.height + 40);
+  }
+  requestAnimationFrame(petalLoop);
+}
+requestAnimationFrame(petalLoop);
+
+let burstInterval;
+function burstPetals(){
+  petalsActive = true;
+  let count = 0;
+  burstInterval = setInterval(()=>{
+    for(let i=0;i<4;i++) spawnPetal();
+    count++;
+    if(count > 30) clearInterval(burstInterval);
+  }, 90);
+  setTimeout(()=>{ petalsActive = petals.length>0 ? petalsActive : false; }, 6000);
+}
+
+/* ============================================================
+   TYPEWRITER — final screen
+   ============================================================ */
+let typewriterStarted = false;
+function typeLine(el, text, speed){
+  return new Promise(resolve=>{
+    let i = 0;
+    (function step(){
+      el.textContent = text.slice(0, i);
+      if(i < text.length){ i++; setTimeout(step, speed); }
+      else{ el.classList.add('done'); resolve(); }
+    })();
+  });
+}
+async function startTypewriter(){
+  if(typewriterStarted) return;
+  typewriterStarted = true;
+  const l1 = document.getElementById('type-1');
+  const l2 = document.getElementById('type-2');
+  const l3 = document.getElementById('type-3');
+  await typeLine(l1, 'Bhaad me jaye.', 55);
+  await new Promise(r=>setTimeout(r, 350));
+  await typeLine(l2, 'Jo hona tha ho gaya.', 55);
+  await new Promise(r=>setTimeout(r, 350));
+  await typeLine(l3, 'Ab bas relax karo, everything will be okay. \u2764\uFE0F', 45);
+}
+</script>
+</body>
+</html>
